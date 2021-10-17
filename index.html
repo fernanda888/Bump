@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Group Project</title>
+    <meta
+      name="viewport"
+      content="width=device-width, height=device-height,
+    user-scalable=no, initial-scale=1, maximum-scale=1"
+    />
+    <script src="https://unpkg.com/sounds-some-sounds@1.0.5/build/index.js"></script>
+    <script src="https://unpkg.com/gif-capture-canvas@1.1.0/build/index.js"></script>
+    <script src="https://unpkg.com/terser@4.6.11/dist/bundle.min.js"></script>
+    <script src="https://unpkg.com/pixi.js@5.3.0/dist/pixi.min.js"></script>
+    <script src="https://unpkg.com/pixi-filters@3.1.1/dist/pixi-filters.js"></script>
+    <script>
+      var module = {};
+    </script>
+    <script src="https://unpkg.com/lodash.clonedeep@4.5.0/index.js"></script>
+    <script src="https://abagames.github.io/crisp-game-lib/bundle.js"></script>
+
+<script> 
+title = "BUMPS";
+
+description = `
+[Slide] Move
+`;
+
+characters = [
+`
+llllll
+llllll
+llllll
+llllll
+llllll
+llllll
+`,`
+bb
+bbb
+bbb
+bbb
+bbb
+bb
+`,`
+rr rr
+ rrr
+  r
+`
+];
+const G = {
+	WIDTH: 150,
+	HEIGHT: 100,
+
+	LINE_SPEED_MIN: 1.0,
+	LINE_SPEED_MAX: 1.5,
+
+	BUMP_MIN_BASE_SPEED: .5,
+    BUMP_MAX_BASE_SPEED: 1.5
+};
+
+options = {
+	viewSize: {x: G.WIDTH, y: G.HEIGHT},
+	theme: "crt",
+	isReplayEnabled: true,
+    isPlayingBgm:true,
+    seed:88
+};
+
+/**
+* @typedef {{
+* pos: Vector,
+* speed: number
+* }} line
+*/	
+
+/**
+* @type  { line [] }
+*/
+let lines;
+
+/**
+ * @typedef {{
+ * pos: Vector,
+ * }} Player
+ */
+
+/**
+ * @type { Player }
+ */
+let player;
+
+
+/**
+ * @typedef {{
+ * pos: Vector
+ * }} bump
+ */
+
+/**
+ * @type { bump [] }
+ */
+let bumps;
+
+/**
+ * @type { number }
+ */
+let currentBumpSpeed;
+
+/**
+ * @type { number }
+ */
+ let currScore;
+
+/**
+ * @typedef {{
+ * pos: Vector
+ * }} Heart
+ */
+
+/**
+ * @type { Heart [] }
+ */
+let hearts;
+
+function update() {
+	if (!ticks) {
+		lines = times(10, () => {
+            const posX = rnd(G.WIDTH-10, G.WIDTH);
+            const posY = G.HEIGHT/2
+            // An object of type line with appropriate properties
+            return {
+	            // Creates a Vector
+                pos: vec(posX, posY),
+                // More RNG
+                speed: rnd(G.line_SPEED_MIN, G.line_SPEED_MAX)
+            };
+        });
+		player = {
+			pos: vec(G.WIDTH * 0.5, G.HEIGHT * 0.5),
+		};
+
+		// Initalise the values:
+		bumps = [];
+		hearts=[];
+
+		currentBumpSpeed = 0;
+	}
+	if (bumps.length === 0) {
+        currentBumpSpeed= difficulty*.8;
+        for (let i = 1; i < 10; i++) {
+            const posX = rnd(G.WIDTH, i * G.WIDTH);
+            const posY = rnd(0, G.HEIGHT-30);
+            bumps.push({ pos: vec(posX, posY) })
+        }
+    }
+	if (hearts.length === 0) {
+        for (let i = 1; i < 10; i++) {
+            const posX = rnd(G.WIDTH, i * G.WIDTH);
+            const posY = rnd(20, G.HEIGHT-30);
+            hearts.push({ pos: vec(posX, posY) })
+        }
+    }
+	// Update for line
+    lines.forEach((s) => {
+        s.pos.x -= currentBumpSpeed;
+        s.pos.wrap(0, G.WIDTH, 0, G.HEIGHT);
+        color("light_yellow");
+        box(s.pos, 8,2);
+    });
+	
+	//updating and drawing player
+	player.pos = vec(5, input.pos.y);
+	player.pos.clamp(5, G.WIDTH, 5, G.HEIGHT);
+	
+	color("black");
+    char("a", player.pos);
+
+	remove(bumps, (b) => {
+        b.pos.x -= currentBumpSpeed;
+        color("yellow");
+        const isCollidingWithPlayer = char("b", b.pos).isColliding.char.a;
+
+        if (isCollidingWithPlayer) {
+          play("hit");
+          color("yellow");
+          particle(b.pos);
+          currScore=+addScore(-10);
+        }
+        return (isCollidingWithPlayer ||b.pos.x < 0);
+    });
+
+	remove(hearts, (h) => {
+        h.pos.x -= currentBumpSpeed;
+        color("red");
+
+        const isCollidingWithHeart = char("c", h.pos).isColliding.char.a;
+
+        if (isCollidingWithHeart) {
+            color("red");
+            particle(h.pos);
+			currScore=+addScore(10);
+            play("coin");
+        }
+        if(h.pos.x<-1){
+            end();
+        }
+
+        return (isCollidingWithHeart ||h.pos.x < -1);
+    });
+    if(score<0){
+        end();
+    }
+}
+addEventListener("load", onLoad);
+</script>
+  </head>
+  <body style="background: #ddd"></body>
+</html>
+
